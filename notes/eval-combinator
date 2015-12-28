@@ -1,0 +1,37 @@
+Evaluation Combinators
+
+Thinking about what I've implemented thus far, I've noticed a few things about
+the current code:
+1. The "environment" seems to have the most control over evaluation, feval only
+restricts the code to the LISP notion of procedure-first semantics. The
+environment dictates what procedure is actually returned UNLESS the first item
+is a pair. I can imagine an "environment" which takes over this portion as well.
+This would make the "environment" semantically act more like a language than
+like a lookup table.
+2. <proc-env> has become a bit of an out for avoiding implementing semantics in
+feval. lisp-base-env abuses <proc-env> to bind non-symbols to their literal
+meaning while make-closure actually compiles a non-native lambda to a native
+lambda, which can then be installed in an environment using acons. I just made a
+<quote-env> which emulates quote using f-expressions. I can imagine similar
+things happening to other R5RS semantic details, including the choice of doing a
+separate stage of macro-expansion before actually running the code.
+3. acons is set up to effectively be an environment combinator.
+
+Part of my intent in getting involved in this project was to be able to make
+powerful and reflective meta-circular (or nearly meta-circular) evaluation to
+aid in writing language tools. The result of these three things is that I have
+brought myself to my goal in a way that was completely unexpected to me. I have
+shown (to myself) that language evaluation can be defined in a practical manner
+using evaluation combinators (from environment combinators). I have a few
+thoughts about what I might want to do going forward:
+
+1) make generic key-value stores (which I've already started as a separate
+project)
+2) consider environments as evaluators, with evaluation/language combinators to
+combine evaluators/languages
+3) properly separate the idea of evaluator from the key-value store
+
+All this said, GOOPS is an invaluable tool to me for experimentation in code.
+Without it, I likely would not have come to these conclustions.
+
+-djf
