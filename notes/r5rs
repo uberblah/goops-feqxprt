@@ -1,0 +1,24 @@
+Too many ellipsis:
+R5RS states that "pattern variables that occur in subpatterns followed by one or
+more instances of the identifier '...' are allowed only in subtemplates that are
+followed by as many instances of '...'". Guile 2.0.11 does not implement this
+correctly and produces an error from map in the code below. The same code in
+Racket 5.3.6 correctly identifies the error as "incompatible ellipsis", but does
+so only when the macro is run, and so can become a runtime error in the REPL.
+This error behavior is the same as the ideal behavior if the macro is used in a
+source file since the macro will run once before any REPL can come up (which is
+relatively common).
+
+I intend to be stricter if I finish implementing R5RS with f-expressions, and
+will consider this behavior to be prematurely allowing an incorrect use of a
+syntactical form. In enforcing this, I will have an appropriate error message
+regardless of whether or not the macro is actually used.
+
+The code that triggers this behavior:
+  (define-syntax erroneous
+    (syntax-rules ()
+      ((erroneous beg (var val ...) ...)
+       (list (list beg (list var val) ...) ...))))
+  (erroneous 0 (1 2 3) (4 5 6) (7 8 9))
+
+-djf

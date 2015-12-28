@@ -85,19 +85,19 @@
 	      ; control features
 	      procedure? apply map for-each force call-with-current-continuation
 	      values call-with-values dynamic-wind
-	      ; Eval
-	      eval scheme-report-environment null-environment
+	      ; eval
+	      eval #;scheme-report-environment #;null-environment
 	      interaction-environment
-	      ; Ports
+	      ; ports
 	      call-with-input-file call-with-output-file input-port?
 	      output-port? current-input-port current-output-port
 	      with-input-from-file with-output-to-file open-input-file
 	      open-output-file close-input-port close-output-port
-	      ; Input
+	      ; input
 	      read read-char peek-char eof-object? char-ready?
-	      ; Output
+	      ; output
 	      write display newline write-char
-	      ; System interface
+	      ; system interface
 	      load #;transcript-on #;transcript-off))
 
 (define r5rs-base-env (append r5rs-proc-env lisp-base-env))
@@ -153,7 +153,7 @@
 (define (syntax-rules-proc expr env body)
   (define (match-pattern pattern expr lits)
     (cond ((member pattern lits) (and (equal? expr lits) '()))
-	  ((symbol? pattern) `((,pattern ,expr)))
+	  ((symbol? pattern) `((,pattern . ,expr)))
 	  ((vector? pattern)
 	   (and (vector? expr)
 		(match-pattern (vector->list pattern)
@@ -174,17 +174,36 @@
     (define (transpose l) (apply map list l))
     (let ((m (map (cut match-pattern p <> lits) e)))
       (and (every identity m)
-	   (let ((vars (map car (car m)))
-		 (vals (map (cut map cdr <>) m)))
+	   (let ((vars (map (lambda (x) (cons (car x) '...)) (car m)))
+		 (vals (transpose (map (cut map cdr <>) m))))
 	     (map cons vars vals)))))
   (match body
     ((_ lits . rules) (match-pattern (caar rules) expr lits))))
 
-;(feval '(+ 2 2) `((+ . ,+) . ,lisp-base-env))
-;(feval '(+ 2 2) lisp-base-env) ; this is supposed to yield an error
-;(feval '(eval (list (string->symbol "+") 2 2) (scheme-report-environment 5)) r5rs-base-env)
-;(feval '(+ 2 2) lit-env)
-;((make-closure 'x '(apply + x) r5rs-base-env) 1 2 3 4 5)
-;(r5rs-transform-body '((begin (define a b)) (define (b) c) expr1 (expr2)))
-;(r5rs-transform-body '(expr))
-;(syntax-rules-proc '(1 2 3) 5 '(syntax-rules () ((_ (a b))) ()))
+#|
+(feval '(+ 2 2) `((+ . ,+) . ,lisp-base-env))
+(feval '(+ 2 2) lisp-base-env) ; this is supposed to yield an error
+(feval '(eval (list (string->symbol "+") 2 2) (scheme-report-environment 5)) r5rs-base-env)
+(feval '(+ 2 2) lit-env)
+((make-closure 'x '(apply + x) r5rs-base-env) 1 2 3 4 5)
+(r5rs-transform-body '((begin (define a b)) (define (b) c) expr1 (expr2)))
+(r5rs-transform-body '(expr))
+(syntax-rules-proc '(1 2 3) 5 '(syntax-rules () ((_ (a b))) ()))
+(syntax-rules-proc '(1 2 3) 5 '(syntax-rules () ((_ a ...) (list a ...))))
+(syntax-rules-proc '(alist-alist 0 (1 2 3) (4 5 6) (7 8 9)) r5rs-base-env '(syntax-rules () ((_ beg (var val ...) ...) (list (list beg var val ...) ...))))
+
+(define-syntax-rule (alist-alist beg (var val ...) ...) (list (list beg var val ...) ...))
+(alist-alist 0 (1 2 3) (4 5 6) (7 8 9))
+
+Too many ellipsis (R5RS):
+R5RS states that "pattern variables that occur in subpatterns followed by one or
+more instances of the identifier '...' are allowed only in subtemplates that are
+followed by as many instances of '...'". Guile 2.0.11 does not implement this
+correctly and produces an error from map in the following code. The same macro
+in racket correctly identifies the error as "incompatible ellipsis", but does so
+only when the macro is run, so that it becomes a runtime error in the REPL. This
+error behavior is okay if the macro is used in a source file, since the macro
+will run once before any REPL can come up.
+(define-syntax-rule (erroneous beg (var val ...) ...) (list (list beg (list var val) ...) ...))
+(erroneous 0 (1 2 3) (4 5 6) (7 8 9))
+|#
