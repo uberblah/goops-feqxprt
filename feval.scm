@@ -195,15 +195,4 @@
 (define-syntax-rule (alist-alist beg (var val ...) ...) (list (list beg var val ...) ...))
 (alist-alist 0 (1 2 3) (4 5 6) (7 8 9))
 
-Too many ellipsis (R5RS):
-R5RS states that "pattern variables that occur in subpatterns followed by one or
-more instances of the identifier '...' are allowed only in subtemplates that are
-followed by as many instances of '...'". Guile 2.0.11 does not implement this
-correctly and produces an error from map in the following code. The same macro
-in racket correctly identifies the error as "incompatible ellipsis", but does so
-only when the macro is run, so that it becomes a runtime error in the REPL. This
-error behavior is okay if the macro is used in a source file, since the macro
-will run once before any REPL can come up.
-(define-syntax-rule (erroneous beg (var val ...) ...) (list (list beg (list var val) ...) ...))
-(erroneous 0 (1 2 3) (4 5 6) (7 8 9))
 |#

@@ -14,11 +14,18 @@ will consider this behavior to be prematurely allowing an incorrect use of a
 syntactical form. In enforcing this, I will have an appropriate error message
 regardless of whether or not the macro is actually used.
 
-The code that triggers this behavior:
+The erroneous code triggering this behavior follows:
   (define-syntax erroneous
     (syntax-rules ()
       ((erroneous beg (var val ...) ...)
        (list (list beg (list var val) ...) ...))))
   (erroneous 0 (1 2 3) (4 5 6) (7 8 9))
+
+As for the source of the error in Guile, it is probably either a lazy Guile
+implementer not putting an error message for an esoteric use of syntax-rules or
+it could be the result of implementing a superset of the correct behavior.
+Thankfully, this really isn't a big deal for myself using Guile, but it does
+demonstrate somepotential pitfalls in implementing the standard completely,
+correctly and in my case strictly.
 
 -djf
