@@ -25,7 +25,50 @@ As for the source of the error in Guile, it is probably either a lazy Guile
 implementer not putting an error message for an esoteric use of syntax-rules or
 it could be the result of implementing a superset of the correct behavior.
 Thankfully, this really isn't a big deal for myself using Guile, but it does
-demonstrate somepotential pitfalls in implementing the standard completely,
+demonstrate some potential pitfalls in implementing the standard completely,
 correctly and in my case strictly.
+
+-djf
+
+UPDATE to previous note:
+
+Attempted implementation of syntax-rules has really given me a distaste of it.
+The main difficulty in the implementation comes from expanding the ellipsis.
+Although capturing them is straightforward, expanding them is not. An easy case
+like "(sym ...)" is trivial, something like "((sym ...) ...)" is a bit trickier,
+but what's really bad is something like "((a b) ...)", which can be an error even
+if the number of parentheses is correct. The reason is that a and b can have
+different expansion lengths/contexts. Consider this code:
+
+(define-syntax-rule (alist (keys ...) (vals ...)) '((keys vals) ...))
+
+In Guile, (alist (1 2 3 4 5) (6 7 8 9 10)) produces the expected alist, but
+(alist (1 2 3 4 5) (6 7 8 9)) produces an opaque error. This is correct
+behavior from Guile, since the behavior is an error, but is also undesirable.
+What DOES make sense in implementation is handing colors/contexts to ellipsis so
+incompatible ellipsis can't occur, in which case the macro couldn't have been
+made in the first place and power is removed from the macro system. The invariant
+that the two ellipsis should share a length is inexpressible,
+
+All this said, the only conclusion I feel I can draw from this is the following:
+syntax-rules is a mess of a DSL hacked into R5RS, and arguably the only items of
+comparable complexity in the standard are call/cc and dynamic-wind. I do not like
+syntax-rules, and adding to my frustration with it I have no ideas on how to
+improve the situation besides the f-expressions I'm wanting to implement. This,
+however, is known to "break compilation". I have some vague ideas about getting
+around this, but nothing terribly concrete yet, and I'm not sure I'd actually
+solve the problem. There's definitely something to be said for defmacro+gensym,
+especially in semantic simplicity and implementation difficulty. Maybe syntactic
+closures would be better?
+
+None of that even remotely involves hygiene, which seems to be partly the point
+of syntax-rules. Regardless of what the best way to solve these problems is,
+there are more immediate practical issues with implementing syntax-rules and more
+for doing so within the current context. Previous implementation attempts have
+apparently had bugs and unexpected behaviors, and others are in the hundreds of
+lines of code. In any case, this doesn't seem like something that I should tackle
+right now. If I intend to continue with R5RS implementation, defmacro+gensym
+seems to be a much better implementation route, even though it diverges from the
+actual spec.
 
 -djf
